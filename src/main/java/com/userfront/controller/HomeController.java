@@ -1,9 +1,12 @@
 package com.userfront.controller;
 
-import java.security.Principal;
-import java.util.HashSet;
-import java.util.Set;
-
+import com.userfront.dao.RoleDao;
+import com.userfront.domain.PrimaryAccount;
+import com.userfront.domain.SavingsAccount;
+import com.userfront.domain.User;
+import com.userfront.domain.security.UserRole;
+import com.userfront.service.UserService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -11,74 +14,67 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
-import com.userfront.dao.RoleDao;
-import com.userfront.domain.PrimaryAccount;
-import com.userfront.domain.SavingsAccount;
-import com.userfront.domain.User;
-import com.userfront.domain.security.UserRole;
-import com.userfront.service.UserService;
+import java.security.Principal;
+import java.util.HashSet;
+import java.util.Set;
 
 @Controller
+@Slf4j
 public class HomeController {
-	
-	@Autowired
-	private UserService userService;
-	
-	@Autowired
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
     private RoleDao roleDao;
-	
-	@RequestMapping("/")
-	public String home() {
-		return "redirect:/index";
-	}
-	
-	@RequestMapping("/index")
+
+    @RequestMapping("/")
+    public String home() {
+        return "redirect:/index";
+    }
+
+    @RequestMapping("/index")
     public String index() {
         return "index";
     }
-	
-	@RequestMapping(value = "/signup", method = RequestMethod.GET)
-    public String signup(Model model) {
+
+    @RequestMapping(value = "/signup", method = RequestMethod.GET)
+    public String signUp(Model model) {
+        log.debug("inside signUp GET method");
         User user = new User();
-
         model.addAttribute("user", user);
-
         return "signup";
     }
-	
-	@RequestMapping(value = "/signup", method = RequestMethod.POST)
-    public String signupPost(@ModelAttribute("user") User user,  Model model) {
 
-        if(userService.checkUserExists(user.getUsername(), user.getEmail()))  {
-
+    @RequestMapping(value = "/signup", method = RequestMethod.POST)
+    public String signUp(@ModelAttribute("user") User user, Model model) {
+        log.debug("inside signUp method:{}", user);
+        String templateName;
+        if (userService.checkUserExists(user.getUsername(), user.getEmail())) {
             if (userService.checkEmailExists(user.getEmail())) {
                 model.addAttribute("emailExists", true);
             }
-
             if (userService.checkUsernameExists(user.getUsername())) {
                 model.addAttribute("usernameExists", true);
             }
-
-            return "signup";
+            templateName = "signup";
         } else {
-        	 Set<UserRole> userRoles = new HashSet<>();
-             userRoles.add(new UserRole(user, roleDao.findByName("ROLE_USER")));
-
+            Set<UserRole> userRoles = new HashSet<>();
+            userRoles.add(new UserRole(user, roleDao.findByName("ROLE_USER")));
             userService.createUser(user, userRoles);
-
-            return "redirect:/";
+            templateName = "redirect:/";
         }
+        return templateName;
     }
-	
-	@RequestMapping("/userFront")
-	public String userFront(Principal principal, Model model) {
+
+    @RequestMapping("/userFront")
+    public String userFront(Principal principal, Model model) {
+        log.debug("inside userFront method:{}", principal.getName());
         User user = userService.findByUsername(principal.getName());
         PrimaryAccount primaryAccount = user.getPrimaryAccount();
         SavingsAccount savingsAccount = user.getSavingsAccount();
-
         model.addAttribute("primaryAccount", primaryAccount);
         model.addAttribute("savingsAccount", savingsAccount);
-
         return "userFront";
     }
 }

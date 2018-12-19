@@ -17,4 +17,4 @@ spring:
 
 logging:
   level.root: info
-  level.io.exnihilo: debug1111111111
+  level.io.exnihilo: debug
